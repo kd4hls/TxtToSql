@@ -27,15 +27,13 @@ NSString* tbl_name;
     _Bool Dbug = 0;
     
     NSArray* RowBuff;
-    NSString* Records;
     NSString* FileBuff;
     NSString* FileType;
-    int count ;
     int  WsTableValue;
     int TblTime;
-    NSUInteger DateStrLen;
-
-    sqlite3 * newDBconnection = NULL;
+    sqlite3 * DbPtr = NULL;
+    sqlite3_stmt *SqlReturned;
+    const char * SqlCommand;
     
     FileType = @"txt";
  
@@ -51,22 +49,21 @@ NSString* tbl_name;
         {
             if (Dbug) NSLog(@"findtxt: DbFile %@", DbFile );
             
-            if (sqlite3_open([DbFile UTF8String], &newDBconnection) == SQLITE_OK)
+            if (sqlite3_open_v2([DbFile UTF8String], &DbPtr, SQLITE_OPEN_READWRITE, NULL) == SQLITE_OK)
             {
                 if (Dbug)
                 {
                     NSLog(@"findtxt: Database Successfully Opened-> %@)", DbFile);
                     
-                    const char *sql = "SELECT * FROM indoorHeatIndex";
-                    sqlite3_stmt *QryStatement;
+                    SqlCommand = "SELECT * FROM indoorHeatIndex";
                     
-                    if (sqlite3_prepare(newDBconnection, sql, -1, &QryStatement, NULL) == SQLITE_OK)
+                    if (sqlite3_prepare(DbPtr, SqlCommand, -1, &SqlReturned, NULL) == SQLITE_OK)
                     {
-                        if (sqlite3_step(QryStatement) == SQLITE_ROW)
+                        if (sqlite3_step(SqlReturned) == SQLITE_ROW)
                         {
-                            TblTime = sqlite3_column_int(QryStatement, 0);
-                            WsTableValue = sqlite3_column_int(QryStatement, 1);
-                            NSLog(@"AppDelegate: sqlite3_prepare  %s)", sql);
+                            TblTime = sqlite3_column_int(SqlReturned, 0);
+                            WsTableValue = sqlite3_column_int(SqlReturned, 1);
+                            NSLog(@"AppDelegate: sqlite3_prepare  %s)", SqlCommand);
                             NSLog(@"AppDelegate: got -> %d %d)", TblTime, WsTableValue);
                         }
                         
@@ -87,23 +84,9 @@ NSString* tbl_name;
                     {
                         if (Dbug) NSLog(@"findtxt: RowBuff %@", RowBuff );
                      
-                            // now to loop through RowBuff line by line
-                        count = 0;
-                        for (Records in RowBuff)
-                        {
-                            count ++ ;
-                            if (count > 3) // ignore headers
-                            {
-                                DateStrLen = [Records length];
-                                if (DateStrLen > 80) // should be 84
-                                {
-                                    NSLog(@"findtxt: count %d", count );
-                                    if (Dbug) NSLog(@"findtxt: Records %@", Records );
-                                    [ConverterPtr LoadVars:newDBconnection :Records ];
-                                }
-                            }   // count
-                        }   // 4 Records
-                        sqlite3_close(newDBconnection);
+                        [ConverterPtr LoadVars:DbPtr :RowBuff ];
+                        //[ConverterPtr LoadMonthRain:DbPtr :RowBuff ];
+
                     }   //  if RowBuff
                 }   //  if FileBuff
                 else
@@ -119,6 +102,9 @@ NSString* tbl_name;
     }   // TxtFile
     else
         NSLog(@"findtxt: TxtFile  Not found %@", TxtFile );
+    
+    NSLog(@"findtxt: fixin to close " );
+    sqlite3_close(DbPtr);
 }   // the end.....
 
 @end

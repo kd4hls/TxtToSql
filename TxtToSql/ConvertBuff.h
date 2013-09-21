@@ -12,7 +12,9 @@ SqlLoader * SqlLoaderPtr;
 
 @interface ConvertBuff : NSObject
 
-- (void) LoadVars:(sqlite3*) DataBasePtr  : (NSString*) currentRow;
+- (void) LoadVars:(sqlite3*) DataBasePtr  : (NSArray*) RowBuff;
+
+- (void) LoadMonthRain:(sqlite3*) DataBasePtr  : (NSArray*) RowBuff;
 
 @end
 
